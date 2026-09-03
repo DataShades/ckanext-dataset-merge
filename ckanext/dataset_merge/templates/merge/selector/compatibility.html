@@ -1,0 +1,67 @@
+<section id="merge-select-compatibility"
+  class="merge-select__compatibility{% if compatibility and compatibility.compatible %} is-compatible{% elif compatibility or compatibility_error %} is-incompatible{% endif %}"
+  data-merge-select-compatibility aria-live="polite" aria-atomic="true"
+  {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  <div class="merge-select__compatibility-message">
+    {% if compatibility_error %}
+      <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      <div>
+        <strong>{{ _("Selection unavailable") }}</strong>
+        <span>{{ compatibility_error }}</span>
+      </div>
+    {% elif not base_id or not source_id %}
+      <i class="fa fa-info-circle" aria-hidden="true"></i>
+      <div>
+        <strong>{{ _("Select both datasets") }}</strong>
+        <span>{{ _("Compatibility is checked after Dataset A and Dataset B are selected.") }}</span>
+      </div>
+    {% elif compatibility.compatible %}
+      <i class="fa fa-check" aria-hidden="true"></i>
+      <div>
+        <strong>{{ _("Eligible to merge") }}</strong>
+        <span>
+          {% if compatibility.base.schema_version %}
+            {{ compatibility.base.schema_type }} ·
+            {{ _("schema version {version} on both datasets").format(
+              version=compatibility.base.schema_version,
+            ) }}
+          {% else %}
+            {{ _("type {type} on both datasets").format(type=compatibility.base.schema_type) }}
+          {% endif %}
+        </span>
+      </div>
+    {% elif compatibility.migration_required %}
+      <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      <div>
+        <strong>{{ _("Schema migration required") }}</strong>
+        <span>{{ compatibility.message }}</span>
+        <small>
+          {{ _("Dataset A: {type}, version {version}. Dataset B: {source_type}, version {source_version}.").format(
+            type=compatibility.base.schema_type,
+            version=compatibility.base.schema_version or _("not pinned"),
+            source_type=compatibility.source.schema_type,
+            source_version=compatibility.source.schema_version or _("not pinned"),
+          ) }}
+        </small>
+      </div>
+    {% else %}
+      <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      <div>
+        <strong>{{ _("Cannot merge these datasets") }}</strong>
+        <span>{{ compatibility.message }}</span>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if compatibility and compatibility.compatible %}
+    <a class="merge-review__submit" data-merge-select-review
+      href="{{ h.url_for('merge.review', base_id=base_id, source_id=source_id) }}">
+      {{ _("Review merge") }}
+      <i class="fa fa-arrow-right" aria-hidden="true"></i>
+    </a>
+  {% else %}
+    <button class="merge-review__submit" type="button" disabled aria-disabled="true">
+      {{ _("Review merge") }}
+    </button>
+  {% endif %}
+</section>

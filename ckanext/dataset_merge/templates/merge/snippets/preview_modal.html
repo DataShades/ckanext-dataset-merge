@@ -1,0 +1,52 @@
+<dialog class="merge-review__modal" data-merge-preview-modal
+  aria-labelledby="merge-preview-title" aria-describedby="merge-preview-description">
+  <div class="merge-review__modal-panel">
+    <header class="merge-review__modal-header">
+      <div>
+        <span class="merge-review__eyebrow">{{ _("Final check") }}</span>
+        <h2 id="merge-preview-title">{{ _("Preview the merged dataset") }}</h2>
+      </div>
+      <button class="merge-review__modal-close" type="button" data-merge-preview-close
+        aria-label="{{ _('Back to merge review') }}">
+        <i class="fa fa-times" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <p id="merge-preview-description" class="merge-review__modal-intro">
+      {{ _("Dataset A keeps its identity (ID), history and schema pin. Confirm that its final content is correct before merging.") }}
+    </p>
+
+    <div class="merge-review__modal-content">
+      <section class="merge-review__preview-section">
+        <div class="merge-review__section-heading">
+          <h3>{{ _("Final metadata") }}</h3>
+        </div>
+        <dl class="merge-review__preview-metadata" data-merge-preview-metadata></dl>
+      </section>
+
+      <section class="merge-review__preview-section">
+        <div class="merge-review__section-heading">
+          <h3>{{ _("Resources kept") }}</h3>
+          <span data-merge-preview-resource-count></span>
+        </div>
+        <ul class="merge-review__preview-resources" data-merge-preview-resources></ul>
+      </section>
+
+      <div class="merge-review__preview-warning">
+        <i class="fa fa-trash" aria-hidden="true"></i>
+        <span>{{ _("After Dataset A is updated successfully, Dataset B will be soft-deleted.") }}</span>
+      </div>
+    </div>
+
+    <footer class="merge-review__modal-actions">
+      <button class="merge-review__secondary-button" type="button" data-merge-preview-close>
+        <i class="fa fa-arrow-left" aria-hidden="true"></i>
+        {{ _("Back to review") }}
+      </button>
+      <button class="merge-review__submit" type="submit" name="confirm_merge" value="1"
+        data-merge-preview-confirm>
+        {{ _("Confirm merge") }}
+      </button>
+    </footer>
+  </div>
+</dialog>

@@ -1,0 +1,75 @@
+{% set letter = "A" if role == "base" else "B" %}
+{% set input_name = "base_id" if role == "base" else "source_id" %}
+
+<section id="merge-select-{{ role }}"
+  class="merge-review__dataset-card merge-select__card{% if dataset %} merge-review__dataset-card--{{ role }} is-selected{% else %} is-empty{% endif %}"
+  data-merge-select-card="{{ role }}">
+  <div class="merge-review__dataset-heading">
+    <span class="merge-review__dataset-letter" aria-hidden="true">{{ letter }}</span>
+    <span class="merge-review__eyebrow">
+      {{ _("Dataset A — Base") if role == "base" else _("Dataset B — Source") }}
+    </span>
+    {% if dataset %}
+      <span class="merge-review__dataset-outcome">
+        <i class="fa {{ 'fa-check' if role == 'base' else 'fa-trash' }}" aria-hidden="true"></i>
+        {{ _("Survives the merge") if role == "base" else _("Soft-deleted after merge") }}
+      </span>
+    {% endif %}
+  </div>
+
+  {% if dataset %}
+    <input type="hidden" name="{{ input_name }}" value="{{ dataset.id }}">
+    <h3>{{ h.dataset_display_name(dataset) }}</h3>
+    <code>{{ dataset.name }}</code>
+    <div class="merge-review__dataset-facts">
+      <span>
+        {% if dataset.organization %}
+          {{ dataset.organization.title or dataset.organization.name }}
+        {% else %}
+          {{ _("No organization") }}
+        {% endif %}
+      </span>
+      <span>
+        {{ ungettext("{count} resource", "{count} resources", dataset.resources|length).format(
+          count=dataset.resources|length,
+        ) }}
+      </span>
+      <span>{{ dataset.type }}</span>
+    </div>
+    <div class="merge-select__selected-actions">
+      <a href="{{ h.url_for(dataset.type ~ '.read', id=dataset.name) }}" target="_blank" rel="noopener">
+        {{ _("Open dataset") }}
+        <i class="fa fa-external-link" aria-hidden="true"></i>
+        <span class="visually-hidden">{{ _("(opens in a new tab)") }}</span>
+      </a>
+      <button class="merge-review__secondary-button" type="button"
+        hx-get="{{ h.url_for('merge.select_card', role=role) }}"
+        hx-target="#merge-select-{{ role }}" hx-swap="outerHTML"
+        hx-include="closest form">
+        {{ _("Choose another dataset") }}
+      </button>
+    </div>
+  {% else %}
+    <div class="merge-select__empty-copy">
+      <strong>{{ _("No dataset selected") }}</strong>
+      <span>{{ _("Search by dataset title or URL.") }}</span>
+    </div>
+    <label for="merge-select-query-{{ role }}">{{ _("Search editable datasets") }}</label>
+    <div class="merge-select__search-control">
+      <i class="fa fa-search" aria-hidden="true"></i>
+      <input id="merge-select-query-{{ role }}" class="form-control" type="search"
+        name="{{ role }}_query" autocomplete="off" minlength="2"
+        placeholder="{{ _('Type at least 2 characters') }}"
+        hx-get="{{ h.url_for('merge.select_search', role=role) }}"
+        hx-trigger="input changed delay:300ms, search" hx-include="closest form"
+        hx-target="#merge-select-results-{{ role }}" hx-swap="innerHTML"
+        hx-indicator="#merge-select-spinner-{{ role }}">
+      <i id="merge-select-spinner-{{ role }}" class="fa fa-spinner fa-spin htmx-indicator" aria-hidden="true"></i>
+    </div>
+    {% if selection_error %}
+      <p class="merge-select__selection-error" role="alert">{{ selection_error }}</p>
+    {% endif %}
+    <div id="merge-select-results-{{ role }}" class="merge-select__results"
+      aria-live="polite" aria-atomic="true"></div>
+  {% endif %}
+</section>

@@ -1,0 +1,142 @@
+{% macro render_value(value, dataset=none, field_name=none) -%}
+  {% if value is none or value == "" or value == [] or value == {} %}
+    <span class="merge-review__empty">{{ _("Empty") }}</span>
+  {% elif field_name == "owner_org" and dataset and dataset.organization %}
+    <span>{{ dataset.organization.title or dataset.organization.name }}</span>
+    <code>{{ value }}</code>
+  {% elif value is mapping %}
+    {{ value.title or value.display_name or value.name or value }}
+  {% elif value is sequence and value is not string %}
+    <span class="merge-review__value-list">
+      {% for item in value %}
+        <span>{{ item.display_name or item.name if item is mapping else item }}</span>
+      {% endfor %}
+    </span>
+  {% else %}
+    {{ value }}
+  {% endif %}
+{%- endmacro %}
+
+
+{% macro expandable_value(value, dataset, field_name, value_id) -%}
+  <div id="{{ value_id }}" class="merge-review__value" data-merge-value>
+    {{ render_value(value, dataset, field_name) }}
+  </div>
+{%- endmacro %}
+
+
+{% macro value_toggle(value_id) -%}
+  <button class="merge-review__value-toggle" type="button" data-merge-value-toggle
+    aria-controls="{{ value_id }}" aria-expanded="false" hidden>
+    {{ _("Show full value") }}
+  </button>
+{%- endmacro %}
+
+
+{% macro dataset_summary(dataset, source_name, letter, cleanup_pending=false) -%}
+  <section class="merge-review__dataset-card merge-review__dataset-card--{{ source_name }}{% if cleanup_pending and source_name == 'source' %} is-cleanup-pending{% endif %}"
+    data-merge-dataset="{{ source_name }}">
+    <div class="merge-review__dataset-heading">
+      <span class="merge-review__dataset-letter" aria-hidden="true">{{ letter }}</span>
+      <span class="merge-review__eyebrow">
+        {{ _("Base dataset") if source_name == "base" else _("Source dataset") }}
+      </span>
+      <span class="merge-review__dataset-outcome">
+        <i class="fa {{ 'fa-check' if source_name == 'base' else 'fa-exclamation-triangle' if cleanup_pending else 'fa-trash' }}"
+          aria-hidden="true"></i>
+        {% if source_name == "base" %}
+          {{ _("Survives the merge") }}
+        {% elif cleanup_pending %}
+          {{ _("Cleanup pending") }}
+        {% else %}
+          {{ _("Soft-deleted after merge") }}
+        {% endif %}
+      </span>
+    </div>
+    <h2>{{ h.dataset_display_name(dataset) }}</h2>
+    <code>{{ dataset.name }}</code>
+    <div class="merge-review__dataset-facts">
+      <span>
+        {% if dataset.organization %}
+          {{ dataset.organization.title or dataset.organization.name }}
+        {% else %}
+          {{ _("No organization") }}
+        {% endif %}
+      </span>
+      <span>
+        {{ ungettext("{count} resource", "{count} resources", dataset.resources|length).format(
+          count=dataset.resources|length,
+        ) }}
+      </span>
+      {% if dataset.metadata_modified %}
+        <span>{{ _("Updated {date}").format(date=h.render_datetime(dataset.metadata_modified)) }}</span>
+      {% endif %}
+    </div>
+    <a href="{{ h.url_for(dataset.type ~ '.read', id=dataset.name) }}" target="_blank" rel="noopener">
+      {{ _("Open dataset") }}
+      <i class="fa fa-external-link" aria-hidden="true"></i>
+      <span class="visually-hidden">{{ _("(opens in a new tab)") }}</span>
+    </a>
+  </section>
+{%- endmacro %}
+
+
+{% macro resource_group(resources, source_name, letter) -%}
+  <section class="merge-review__resource-group merge-review__resource-group--{{ source_name }}"
+    data-resource-source="{{ source_name }}">
+    <header class="merge-review__resource-group-heading">
+      <span class="merge-review__resource-letter" aria-hidden="true">{{ letter }}</span>
+      <h3>{{ _("Dataset A · base") if source_name == "base" else _("Dataset B · source") }}</h3>
+      <span data-resource-group-summary>
+        {{ _("{kept} of {total} kept").format(kept=resources|length, total=resources|length) }}
+      </span>
+      {% if resources %}
+        <button class="merge-review__bulk-button" type="button" data-resource-bulk="{{ source_name }}">
+          {{ _("Drop all") }}
+        </button>
+      {% endif %}
+    </header>
+
+    {% if resources %}
+      <div class="merge-review__resource-list">
+        {% for resource in resources %}
+          {% set input_id = "merge-resource-" ~ source_name ~ "-" ~ loop.index %}
+          <article class="merge-review__resource is-kept" data-resource-card>
+            <span class="merge-review__resource-icon" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path>
+                <path d="M14 3v5h5"></path>
+              </svg>
+            </span>
+            <div class="merge-review__resource-details">
+              <div class="merge-review__resource-name">
+                <strong>{{ resource.name or _("Unnamed resource") }}</strong>
+                {% if resource.format %}<span>{{ resource.format }}</span>{% endif %}
+              </div>
+              {% if resource.description %}<p>{{ resource.description }}</p>{% endif %}
+              <div class="merge-review__resource-facts">
+                <span>{{ _("Uploaded file") if resource.url_type == "upload" else _("Link") }}</span>
+                {% if resource.size %}<span>{{ h.localised_filesize(resource.size) }}</span>{% endif %}
+                {% if resource.last_modified or resource.created %}
+                  <span>
+                    {{ _("Updated {date}").format(
+                      date=h.render_datetime(resource.last_modified or resource.created),
+                    ) }}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+            <label class="merge-review__resource-toggle" for="{{ input_id }}">
+              <input id="{{ input_id }}" type="checkbox" name="resource_ids"
+                checked data-merge-resource value="{{ resource.id }}">
+              <span data-resource-status>{{ _("Keeping") }}</span>
+            </label>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="merge-review__no-resources">{{ _("No resources") }}</p>
+    {% endif %}
+  </section>
+{%- endmacro %}

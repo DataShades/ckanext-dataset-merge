@@ -1,0 +1,84 @@
+{% extends "page.html" %}
+{% import "merge/snippets/_macros.html" as merge with context %}
+
+{% block subtitle %}{{ _("Review dataset merge") }}{% endblock %}
+
+{% block breadcrumb_content %}
+  <li class="breadcrumb-item active">{{ _("Review dataset merge") }}</li>
+{% endblock %}
+
+{% block secondary %}{% endblock %}
+
+{% block primary %}
+  {% asset "merge/merge-css" %}
+  {% asset "merge/merge-js" %}
+
+  {% set compatibility = comparison.compatibility %}
+
+  <form method="post"
+    action="{{ h.url_for('merge.review', base_id=base.id, source_id=source.id) }}"
+    class="merge-review" data-module="merge-review" data-merge-review>
+    {{ h.csrf_input() }}
+    <header class="merge-review__intro">
+      <h1>{{ _("Review dataset merge") }}</h1>
+      <p>
+        {{ _("Dataset A keeps its identity (ID), history and schema pin. Choose the final content from both datasets.") }}
+      </p>
+      {% if compatibility.compatible %}
+        <div class="merge-review__compatibility">
+          <i class="fa fa-check" aria-hidden="true"></i>
+          {% if compatibility.base.schema_version %}
+            {{ _("Same schema on both datasets") }} —
+            <strong>
+              {{ compatibility.base.schema_type }} ·
+              {{ _("version {version}").format(version=compatibility.base.schema_version) }}
+            </strong>,
+            {{ _("pinned. Edit access verified.") }}
+          {% else %}
+            {{ _("Both datasets are type") }}
+            <strong>{{ compatibility.base.schema_type }}</strong>.
+            {{ _("Edit access verified.") }}
+          {% endif %}
+        </div>
+      {% endif %}
+    </header>
+
+    <div class="merge-review__datasets">
+      {{ merge.dataset_summary(base, "base", "A") }}
+      <div class="merge-review__flow" aria-hidden="true">
+        <i class="fa fa-long-arrow-left"></i>
+        <span>{{ _("content flows in") }}</span>
+      </div>
+      {{ merge.dataset_summary(source, "source", "B") }}
+    </div>
+
+    {% if not compatibility.compatible %}
+      <section class="merge-review__incompatible">
+        <div class="alert alert-warning" data-merge-incompatible>{{ compatibility.message }}</div>
+        <dl>
+          <dt>{{ _("Dataset A schema") }}</dt>
+          <dd data-schema-source="base">
+            {{ compatibility.base.schema_type }}
+            {%- if compatibility.base.schema_version %} — {{ _("version") }} {{ compatibility.base.schema_version }}{% endif %}
+          </dd>
+          <dt>{{ _("Dataset B schema") }}</dt>
+          <dd data-schema-source="source">
+            {{ compatibility.source.schema_type }}
+            {%- if compatibility.source.schema_version %} — {{ _("version") }} {{ compatibility.source.schema_version }}{% endif %}
+          </dd>
+        </dl>
+      </section>
+    {% else %}
+      {% set conflict_count = comparison.metadata_fields|selectattr("state", "equalto", "conflict")|list|length %}
+      {% set resource_count = comparison.resources.base|length + comparison.resources.source|length %}
+
+      {% snippet "merge/snippets/sticky_summary.html", conflict_count=conflict_count %}
+      {% snippet "merge/snippets/metadata.html", comparison=comparison, base=base, source=source %}
+      {% snippet "merge/snippets/resources.html",
+        comparison=comparison,
+        resource_count=resource_count
+      %}
+      {% snippet "merge/snippets/preview_modal.html" %}
+    {% endif %}
+  </form>
+{% endblock %}

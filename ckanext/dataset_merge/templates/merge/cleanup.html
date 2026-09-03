@@ -1,0 +1,68 @@
+{% extends "page.html" %}
+{% import "merge/snippets/_macros.html" as merge with context %}
+
+{% block subtitle %}{{ _("Complete dataset merge cleanup") }}{% endblock %}
+
+{% block breadcrumb_content %}
+  <li class="breadcrumb-item active">{{ _("Complete dataset merge cleanup") }}</li>
+{% endblock %}
+
+{% block secondary %}{% endblock %}
+
+{% block primary %}
+  {% asset "merge/merge-css" %}
+  {% asset "merge/merge-js" %}
+
+  <article class="merge-review" data-merge-cleanup-pending>
+    <header class="merge-review__intro">
+      <h1>{{ _("Dataset merge needs cleanup") }}</h1>
+      <p>
+        {{ _("Dataset A was updated successfully. Dataset B is still active because cleanup did not complete.") }}
+      </p>
+    </header>
+
+    <div class="merge-review__datasets">
+      {{ merge.dataset_summary(base, "base", "A", cleanup_pending=true) }}
+      <div class="merge-review__flow" aria-hidden="true">
+        <i class="fa fa-long-arrow-left"></i>
+      </div>
+      {{ merge.dataset_summary(source, "source", "B", cleanup_pending=true) }}
+    </div>
+
+    <section class="merge-review__cleanup-panel">
+      <div class="merge-review__cleanup-heading">
+        <span class="merge-review__cleanup-icon" aria-hidden="true">
+          <i class="fa fa-exclamation-triangle"></i>
+        </span>
+        <div>
+          <span class="merge-review__eyebrow">{{ _("Partial cleanup") }}</span>
+          <h2>{{ _("Finish deleting Dataset B") }}</h2>
+        </div>
+      </div>
+
+      <p>
+        {{ _("The selected metadata and resources are already saved on Dataset A. Dataset B only needs to be soft-deleted.") }}
+      </p>
+
+      <div class="merge-review__cleanup-notice">
+        <i class="fa fa-shield" aria-hidden="true"></i>
+        {{ _("Retrying cleanup only deletes Dataset B. It does not run the merge again or change Dataset A.") }}
+      </div>
+
+      <form method="post"
+        action="{{ h.url_for('merge.cleanup', base_id=base.id, source_id=source.id) }}"
+        data-merge-cleanup-retry>
+        {{ h.csrf_input() }}
+        <div class="merge-review__cleanup-actions">
+          <a class="merge-review__secondary-button"
+            href="{{ h.url_for(base.type ~ '.read', id=base.name) }}">
+            {{ _("Open Dataset A") }}
+          </a>
+          <button class="merge-review__submit" type="submit">
+            {{ _("Retry deleting Dataset B") }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </article>
+{% endblock %}

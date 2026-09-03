@@ -1,0 +1,13 @@
+{% snippet "merge/selector/card.html",
+  role=role,
+  dataset=dataset,
+  selection_error=selection_error
+%}
+
+{% snippet "merge/selector/compatibility.html",
+  base_id=base_id,
+  source_id=source_id,
+  compatibility=compatibility,
+  compatibility_error=compatibility_error,
+  oob=true
+%}

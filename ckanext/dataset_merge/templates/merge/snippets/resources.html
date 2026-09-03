@@ -1,0 +1,17 @@
+{% import "merge/snippets/_macros.html" as merge with context %}
+
+<section class="merge-review__section merge-review__resources" data-merge-resources>
+  <div class="merge-review__section-heading">
+    <h2>{{ _("Resources") }}</h2>
+    <span data-resource-summary>
+      {{ _("{kept} of {total} resources kept").format(kept=resource_count, total=resource_count) }}
+    </span>
+  </div>
+  <div class="merge-review__resource-groups">
+    {{ merge.resource_group(comparison.resources.base, "base", "A") }}
+    {{ merge.resource_group(comparison.resources.source, "source", "B") }}
+  </div>
+  <p class="merge-review__resource-help">
+    {{ _("Resources are independent choices. Selected Dataset A resources stay on A; selected Dataset B resources are cloned with fresh IDs.") }}
+  </p>
+</section>

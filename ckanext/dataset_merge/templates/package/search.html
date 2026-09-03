@@ -1,0 +1,9 @@
+{% ckan_extends %}
+
+{% block content_action %}
+  {{ super() }}
+
+  {% if current_user.is_authenticated %}
+    {% snippet "merge/selector/modal.html", placement="search" %}
+  {% endif %}
+{% endblock %}

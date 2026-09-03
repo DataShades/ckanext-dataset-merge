@@ -1,0 +1,25 @@
+{% if query|length < 2 %}
+  <p class="merge-select__search-message">{{ _("Type at least 2 characters to search.") }}</p>
+{% elif datasets %}
+  <ul class="merge-select__result-list">
+    {% for dataset in datasets %}
+      <li>
+        <button type="button"
+          hx-get="{{ h.url_for('merge.select_card', role=role, dataset_id=dataset.id) }}"
+          hx-target="#merge-select-{{ role }}" hx-swap="outerHTML"
+          hx-include="closest form">
+          <span class="merge-select__result-title">{{ h.dataset_display_name(dataset) }}</span>
+          <code>{{ dataset.name }}</code>
+          <span class="merge-select__result-facts">
+            {% if dataset.organization %}
+              {{ dataset.organization.title or dataset.organization.name }} ·
+            {% endif %}
+            {{ dataset.type }}
+          </span>
+        </button>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="merge-select__search-message">{{ _("No editable datasets match this search.") }}</p>
+{% endif %}

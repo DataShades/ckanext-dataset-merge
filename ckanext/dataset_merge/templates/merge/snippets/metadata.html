@@ -1,0 +1,119 @@
+{% import "merge/snippets/_macros.html" as merge with context %}
+
+<section class="merge-review__section" data-merge-metadata>
+  <div class="merge-review__section-heading">
+    <h2>{{ _("Metadata") }}</h2>
+    <span data-visible-fields>
+      {{ _("{visible} of {total} fields shown").format(
+        visible=comparison.metadata_fields|length,
+        total=comparison.metadata_fields|length,
+      ) }}
+    </span>
+  </div>
+  <p class="merge-review__section-help">
+    {{ _("Choose a value for each conflict. Dataset A is selected by default. Values present on only one dataset are kept automatically.") }}
+  </p>
+
+  <div class="merge-review__metadata-list">
+    {% for field in comparison.metadata_fields %}
+      {% set field_id = "merge-field-" ~ loop.index %}
+      {% if field.state == "conflict" %}
+        <fieldset class="merge-review__field merge-review__field--conflict" data-merge-field
+          data-field-name="{{ field.field_name }}" data-field-label="{{ field.label }}"
+          data-value-state="{{ field.state }}">
+          <legend class="visually-hidden">
+            {{ _("Choose the final value for {field}").format(field=field.label) }}
+          </legend>
+          <div class="merge-review__field-label">
+            <span>{{ field.label }}</span>
+            <span class="merge-review__state">{{ _("Conflict") }}</span>
+            {% if field.field_name == "owner_org" %}
+              <small>{{ _("The selected organization determines who manages the surviving dataset.") }}</small>
+            {% elif field.field_name == "name" %}
+              <small>{{ _("The surviving dataset will use the selected URL after the merge.") }}</small>
+            {% endif %}
+          </div>
+          <div class="merge-review__value-options">
+            {% for source_name, dataset, value, letter in [
+              ("base", base, field.base_value, "A"),
+              ("source", source, field.source_value, "B")
+            ] %}
+              {% set input_id = field_id ~ "-" ~ source_name %}
+              {% set value_id = input_id ~ "-value" %}
+              <div class="merge-review__value-option" data-source="{{ source_name }}">
+                <div class="merge-review__value-card {{ 'is-selected' if source_name == 'base' }}">
+                  <label class="merge-review__value-choice" for="{{ input_id }}">
+                    <input id="{{ input_id }}" class="merge-review__choice" type="radio"
+                      name="metadata_{{ field.field_name }}" value="{{ source_name }}"
+                      {% if source_name == "base" %}checked{% endif %}>
+                    <span class="merge-review__radio-dot" aria-hidden="true"></span>
+                    <span class="merge-review__value-source">
+                      {{ _("Dataset {letter}").format(letter=letter) }}
+                    </span>
+                    <span class="merge-review__value-status" data-value-status>
+                      {{ _("Kept — default") if source_name == "base" else _("Not kept") }}
+                    </span>
+                    {{ merge.expandable_value(value, dataset, field.field_name, value_id) }}
+                  </label>
+                </div>
+                {{ merge.value_toggle(value_id) }}
+              </div>
+            {% endfor %}
+          </div>
+        </fieldset>
+      {% elif field.state in ["base_only", "source_only"] %}
+        {% set source_name = "base" if field.state == "base_only" else "source" %}
+        {% set dataset = base if source_name == "base" else source %}
+        {% set value = field.base_value if source_name == "base" else field.source_value %}
+        <article class="merge-review__field merge-review__field--automatic" data-merge-field
+          data-field-name="{{ field.field_name }}" data-field-label="{{ field.label }}"
+          data-value-state="{{ field.state }}">
+          <div class="merge-review__field-label">
+            <span>{{ field.label }}</span>
+            <span class="merge-review__state">
+              {{ _("Only on Dataset A") if source_name == "base" else _("Only on Dataset B") }}
+            </span>
+          </div>
+          <div class="merge-review__value-options">
+            {% set value_id = field_id ~ "-" ~ source_name ~ "-value" %}
+            <div class="merge-review__value-option" data-source="{{ source_name }}">
+              <div class="merge-review__value-card is-selected is-automatic">
+                <div class="merge-review__value-choice">
+                  <span class="merge-review__value-source">
+                    {{ _("Dataset A") if source_name == "base" else _("Dataset B") }}
+                  </span>
+                  <span class="merge-review__value-status">{{ _("Kept — only value") }}</span>
+                  {{ merge.expandable_value(value, dataset, field.field_name, value_id) }}
+                </div>
+              </div>
+              {{ merge.value_toggle(value_id) }}
+            </div>
+          </div>
+          <p class="merge-review__automatic-note">
+            {% if source_name == "base" %}
+              {{ _("Empty on Dataset B — Dataset A's value is kept automatically.") }}
+            {% else %}
+              {{ _("Empty on Dataset A — Dataset B's value fills the gap automatically.") }}
+            {% endif %}
+          </p>
+        </article>
+      {% else %}
+        <article class="merge-review__field merge-review__field--slim" data-merge-field
+          data-field-name="{{ field.field_name }}" data-field-label="{{ field.label }}"
+          data-value-state="{{ field.state }}">
+          <strong>{{ field.label }}</strong>
+          <span class="merge-review__slim-value">
+            {% if field.state == "empty" %}
+              {{ _("No value on either dataset") }}
+            {% else %}
+              {{ merge.render_value(field.base_value, base, field.field_name) }}
+            {% endif %}
+          </span>
+          <span class="merge-review__state">
+            {{ _("Empty on both") if field.state == "empty" else _("Same on both") }}
+          </span>
+        </article>
+      {% endif %}
+    {% endfor %}
+  </div>
+</section>

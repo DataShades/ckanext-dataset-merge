@@ -1,0 +1,9 @@
+{% ckan_extends %}
+
+{% block content_action %}
+  {% if h.check_access('package_update', {'id': pkg.id}) %}
+    {% snippet "merge/selector/modal.html", base=pkg %}
+  {% endif %}
+
+  {{ super() }}
+{% endblock %}

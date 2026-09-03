@@ -1,0 +1,114 @@
+[project]
+name = "ckanext-dataset-merge"
+version = "0.0.1"
+description = "Tool for merging two different datasets of the same schema into one."
+readme = "README.md"
+authors = [
+    {name = "DataShades"}
+]
+license = {text = "AGPL"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+keywords = [ "CKAN", ]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/DataShades/ckanext-dataset-merge"
+
+[project.entry-points."ckan.plugins"]
+dataset_merge = "ckanext.dataset_merge.plugin:DatasetMergePlugin"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+        "ignore::sqlalchemy.exc.SADeprecationWarning",
+        "ignore::sqlalchemy.exc.SAWarning",
+        "ignore::DeprecationWarning",
+]
+addopts = "--ckan-ini test.ini"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 127
+
+[tool.ruff.lint]
+select = [
+       "ANN0", # type annotations for function arguments
+       "B",  # likely bugs and design problems
+       "BLE",  # do not catch blind exception
+       "C4",  # better list/set/dict comprehensions
+       "C90",  # check McCabe complexity
+       "DTZ", # enforce timezone in date objects
+       "E",  # pycodestyle error
+       "W",  # pycodestyle warning
+       "F",  # pyflakes
+       "FA", # verify annotations from future
+       "G",  # format strings for logging statements
+       "N",  # naming conventions
+       "I",  # isort
+       "ICN", # import conventions
+       "D1",  # require doc
+       "D2",  # doc formatting
+       "D4",  # doc convention
+       "PL",  # pylint
+       "PERF", # performance anti-patterns
+       "PT",  # pytest style
+       # "PTH", # replace os.path with pathlib
+       "PIE",  # misc lints
+       "RET",  # improvements for return statements
+       "RSE",  # improvements for rise statements
+       "S",  # security testing
+       "SIM",  # simplify code
+       "T10",  # debugging statements
+       "T20",  # print statements
+       "TID",  # tidier imports
+       "TRY",  # better exceptions
+       "UP",  # upgrade syntax for newer versions of the language
+]
+
+ignore = [
+       "E712", # comparison to bool: violated by SQLAlchemy filters
+       "PLC1901", # simplify comparison to empty string: violated by SQLAlchemy filters
+       "RET503", # don't enforce return-None
+       "D100", "D104", # do not require docstrings in modules
+]
+
+[tool.ruff.lint.per-file-ignores]
+"ckanext/dataset_merge/tests*" = ["S", "PL", "ANN", "D101"]
+"ckanext/dataset_merge/logic/*" = [
+    "D417", # actions don't describe context and data_dict
+]
+
+[tool.ruff.lint.flake8-import-conventions.aliases]
+"ckan.plugins" = "p"
+"ckan.plugins.toolkit" = "tk"
+sqlalchemy = "sa"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+section-order = [
+    "future",
+    "standard-library",
+    "first-party",
+    "third-party",
+    "ckan",
+    "ckanext",
+    "self",
+    "local-folder",
+]
+
+[tool.ruff.lint.isort.sections]
+ckan = ["ckan"]
+ckanext = ["ckanext"]
+self = ["ckanext.dataset_merge"]

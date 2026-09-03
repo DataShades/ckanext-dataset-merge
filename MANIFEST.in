@@ -1,0 +1,6 @@
+include README.rst
+include LICENSE
+include requirements.txt
+recursive-include ckanext/dataset_merge *.html *.json *.js *.less *.css *.mo *.yml
+recursive-include ckanext/dataset_merge/migration *.ini *.py *.mako
+recursive-include ckanext/dataset_merge/public *.*

@@ -1,0 +1,33 @@
+<div class="merge-review__sticky" data-merge-sticky>
+  <div class="merge-review__sticky-inner">
+    <div class="merge-review__counter">
+      <strong data-conflict-count>
+        {{ ungettext("{count} conflicting field", "{count} conflicting fields", conflict_count).format(
+          count=conflict_count,
+        ) }}
+      </strong>
+      <span data-decision-summary aria-live="polite">
+        {{ _("0 of {count} conflicts use Dataset B · {count} use Dataset A").format(count=conflict_count) }}
+      </span>
+    </div>
+    <div class="merge-review__filters" role="group" aria-label="{{ _("Filter metadata fields") }}">
+      <span>{{ _("Show") }}</span>
+      <button type="button" data-merge-filter="all" class="is-active" aria-pressed="true">
+        {{ _("All fields") }}
+      </button>
+      <button type="button" data-merge-filter="decision" aria-pressed="false">
+        {{ _("Needs a decision") }}
+      </button>
+      <button type="button" data-merge-filter="difference" aria-pressed="false">
+        {{ _("Differences") }}
+      </button>
+      <button type="button" data-merge-filter="unchanged" aria-pressed="false">
+        {{ _("Unchanged") }}
+      </button>
+    </div>
+    <button class="merge-review__submit" type="button" data-merge-preview-open>
+      {{ _("Merge datasets") }}
+    </button>
+  </div>
+  <div class="merge-review__progress" aria-hidden="true"><span data-decision-progress></span></div>
+</div>

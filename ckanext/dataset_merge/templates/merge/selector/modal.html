@@ -1,0 +1,62 @@
+{% asset "merge/merge-css" %}
+{% asset "merge/merge-js" %}
+
+{% set initial_base = base or none %}
+{% set initial_base_id = initial_base.id if initial_base else none %}
+
+<div class="merge-select-launcher{% if placement == 'search' %} merge-select-launcher--search{% endif %}"
+  data-module="merge-select">
+  <button type="button" class="btn btn-secondary" data-merge-select-open
+    aria-haspopup="dialog" aria-controls="merge-select-modal">
+    <i class="fa fa-code-fork" aria-hidden="true"></i>
+    {{ _("Start merge workflow") }}
+  </button>
+
+  <dialog id="merge-select-modal"
+    class="merge-review merge-review__modal merge-select__modal"
+    data-merge-select-modal aria-labelledby="merge-select-title"
+    aria-describedby="merge-select-description">
+    <div class="merge-review__modal-panel">
+      <header class="merge-review__modal-header">
+        <div>
+          <span class="merge-review__eyebrow">{{ _("Dataset merge") }}</span>
+          <h2 id="merge-select-title">{{ _("Select datasets to merge") }}</h2>
+        </div>
+        <button class="merge-review__modal-close" type="button" data-merge-select-close
+          aria-label="{{ _('Close dataset selection') }}">
+          <i class="fa fa-times" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <p id="merge-select-description" class="merge-review__modal-intro">
+        {{ _("Choose two datasets you can edit. Dataset A keeps its ID, history and schema pin; Dataset B supplies candidate content and is deleted after a successful merge.") }}
+      </p>
+
+      <form class="merge-select__form" data-merge-select-form>
+        <div class="merge-review__modal-content">
+          <div class="merge-select__cards">
+            {% snippet "merge/selector/card.html", role="base", dataset=initial_base %}
+            <div class="merge-review__flow" aria-hidden="true">
+              <i class="fa fa-long-arrow-left"></i>
+              <span>{{ _("content flows in") }}</span>
+            </div>
+            {% snippet "merge/selector/card.html", role="source", dataset=none %}
+          </div>
+
+          {% snippet "merge/selector/compatibility.html",
+            base_id=initial_base_id,
+            source_id=none,
+            compatibility=none,
+            compatibility_error=none
+          %}
+        </div>
+      </form>
+
+      <footer class="merge-review__modal-actions">
+        <button class="merge-review__secondary-button" type="button" data-merge-select-close>
+          {{ _("Cancel") }}
+        </button>
+      </footer>
+    </div>
+  </dialog>
+</div>

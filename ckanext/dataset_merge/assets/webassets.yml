@@ -1,0 +1,15 @@
+merge-js:
+  filter: rjsmin
+  output: ckanext-merge/%(version)s-merge.js
+  contents:
+    - scripts/merge-select.js
+    - scripts/merge-review.js
+  extra:
+    preload:
+      - base/main
+
+merge-css:
+  filter: cssrewrite
+  output: ckanext-merge/%(version)s-merge.css
+  contents:
+    - styles/merge.css
