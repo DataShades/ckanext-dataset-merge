@@ -22,6 +22,7 @@ MetadataValueState = Literal[
     "same",
     "conflict",
 ]
+MetadataChoice = Literal["base", "source", "both"]
 
 
 class DatasetSchemaIdentity(TypedDict):
@@ -51,6 +52,10 @@ class MetadataComparisonField(TypedDict):
     base_value: Any
     source_value: Any
     state: MetadataValueState
+    # ``combinable`` fields (e.g. tags) offer a third "both" choice on conflict
+    # that unions the two sides; ``combined_value`` is that precomputed union.
+    combinable: bool
+    combined_value: Any
 
 
 class MergeMetadataComparisonResult(TypedDict):

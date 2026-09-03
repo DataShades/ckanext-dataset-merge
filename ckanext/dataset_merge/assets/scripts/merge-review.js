@@ -48,6 +48,7 @@ ckan.module("merge-review", function ($) {
       this.el.on("submit.mergeReview", this._onSubmit);
 
       this._initializeValueToggles();
+      this._updateDecisions();
     },
 
     _initializeValueToggles() {
@@ -95,16 +96,20 @@ ckan.module("merge-review", function ($) {
       const conflicts = this.el.find('[data-value-state="conflict"]');
       const total = conflicts.length;
       const sourceSelected = conflicts.find('.merge-review__choice[value="source"]:checked').length;
-      const baseSelected = total - sourceSelected;
-      const progress = total ? (sourceSelected / total) * 100 : 100;
+      const bothSelected = conflicts.find('.merge-review__choice[value="both"]:checked').length;
+      const baseSelected = total - sourceSelected - bothSelected;
+      const progress = total ? ((sourceSelected + bothSelected) / total) * 100 : 100;
 
-      this.el.find("[data-decision-summary]").text(
-        this._("%(source)s of %(total)s conflicts use Dataset B · %(base)s use Dataset A", {
-          source: sourceSelected,
-          total: total,
-          base: baseSelected,
-        }),
-      );
+      let summary = this._("%(source)s of %(total)s conflicts use Dataset B · %(base)s use Dataset A", {
+        source: sourceSelected,
+        total: total,
+        base: baseSelected,
+      });
+      if (bothSelected) {
+        summary += this._(" · %(both)s combine both", {both: bothSelected});
+      }
+
+      this.el.find("[data-decision-summary]").text(summary);
       this.el.find("[data-decision-progress]").css("width", progress + "%");
     },
 

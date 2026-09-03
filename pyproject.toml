@@ -1,6 +1,6 @@
 [project]
 name = "ckanext-dataset-merge"
-version = "0.0.1"
+version = "0.1.0"
 description = "Tool for merging two different datasets of the same schema into one."
 readme = "README.md"
 authors = [

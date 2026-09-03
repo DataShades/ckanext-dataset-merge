@@ -280,6 +280,8 @@ gap:10px;
 align-items:start
 }.merge-review__field--automatic .merge-review__value-options{
 grid-template-columns:minmax(0,1fr)
+}.merge-review__field--combinable .merge-review__value-options{
+grid-template-columns:repeat(3,minmax(0,1fr))
 }.merge-review__value-option{
 min-width:0
 }.merge-review__value-card{
@@ -488,6 +490,8 @@ width:16px;
 height:16px;
 margin:0;
 accent-color:var(--merge-accent)
+}.merge-review__resource-toggle:after{
+display:none
 }.merge-review__resource.is-kept .merge-review__resource-toggle{
 border-color:var(--merge-accent);
 background:var(--merge-accent-wash);
@@ -792,7 +796,7 @@ color:var(--merge-text)
 font-size:12.5px
 }.merge-select__compatibility-message small{
 color:var(--merge-text-muted)
-}@media (max-width:900px){.merge-review__datasets,.merge-review__field--automatic,.merge-review__field--conflict,.merge-review__resource-groups,.merge-review__value-options,.merge-select__cards{
+}@media (max-width:900px){.merge-review__datasets,.merge-review__field--automatic,.merge-review__field--combinable .merge-review__value-options,.merge-review__field--conflict,.merge-review__resource-groups,.merge-review__value-options,.merge-select__cards{
 grid-template-columns:minmax(0,1fr)
 }.merge-review__flow{
 min-height:36px;

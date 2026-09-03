@@ -265,6 +265,8 @@ class TestMergeMetadataComparison:
             "base_value": base_org["id"],
             "source_value": source_org["id"],
             "state": "conflict",
+            "combinable": False,
+            "combined_value": None,
         }
         assert fields["base_only"]["state"] == "base_only"
         assert fields["source_only"]["state"] == "source_only"
@@ -982,6 +984,8 @@ class TestMergeTags:
         assert tags["state"] == "conflict"
         assert tags["base_value"] == [{"name": "alpha"}, {"name": "shared"}]
         assert tags["source_value"] == [{"name": "beta"}, {"name": "shared"}]
+        assert tags["combinable"] is True
+        assert tags["combined_value"] == [{"name": "alpha"}, {"name": "beta"}, {"name": "shared"}]
 
     def test_matching_tags_are_reported_as_same(self):
         """Identical tag sets (order aside) are not a conflict."""
@@ -1056,3 +1060,77 @@ class TestMergeTags:
 
         updated = call_action("package_show", id=base["id"])
         assert sorted(tag["name"] for tag in updated["tags"]) == ["beta", "shared"]
+
+    def test_apply_combines_both_tag_sets_by_default(self):
+        """With no explicit choice, a tag conflict keeps the union of both sides."""
+        base = call_action(
+            "package_create",
+            type="merge-test-a",
+            name="base-dataset",
+            title="Base",
+            tag_string="alpha,shared",
+        )
+        source = call_action(
+            "package_create",
+            type="merge-test-a",
+            name="source-dataset",
+            title="Source",
+            tag_string="beta,shared",
+        )
+
+        call_action(
+            "merge_apply_to_base",
+            base_id=base["id"],
+            source_id=source["id"],
+            metadata_choices={},
+            resource_ids=[],
+        )
+
+        updated = call_action("package_show", id=base["id"])
+        assert sorted(tag["name"] for tag in updated["tags"]) == ["alpha", "beta", "shared"]
+
+    def test_apply_combines_both_tag_sets_when_chosen(self):
+        """An explicit ``both`` choice unions the two tag sets."""
+        base = call_action(
+            "package_create",
+            type="merge-test-a",
+            name="base-dataset",
+            title="Base",
+            tag_string="alpha,shared",
+        )
+        source = call_action(
+            "package_create",
+            type="merge-test-a",
+            name="source-dataset",
+            title="Source",
+            tag_string="beta,shared",
+        )
+
+        call_action(
+            "merge_apply_to_base",
+            base_id=base["id"],
+            source_id=source["id"],
+            metadata_choices={"tags": "both", "title": "base"},
+            resource_ids=[],
+        )
+
+        updated = call_action("package_show", id=base["id"])
+        assert sorted(tag["name"] for tag in updated["tags"]) == ["alpha", "beta", "shared"]
+
+    def test_both_is_rejected_for_a_non_combinable_field(self):
+        """``both`` is only valid for combinable fields such as tags."""
+        base = call_action(
+            "package_create", type="merge-test-a", name="base-dataset", title="Base", tag_string="shared"
+        )
+        source = call_action(
+            "package_create", type="merge-test-a", name="source-dataset", title="Source", tag_string="shared"
+        )
+
+        with pytest.raises(tk.ValidationError):
+            call_action(
+                "merge_apply_to_base",
+                base_id=base["id"],
+                source_id=source["id"],
+                metadata_choices={"title": "both"},
+                resource_ids=[],
+            )

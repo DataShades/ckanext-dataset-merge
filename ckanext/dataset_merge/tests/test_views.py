@@ -559,3 +559,94 @@ class TestMergeReview:
         )
 
         assert response.status_code == 403
+
+    def test_tag_conflict_offers_a_combined_choice_selected_by_default(
+        self,
+        app: CKANTestApp,
+        sysadmin_factory: Any,
+    ):
+        """A tag conflict shows a third "both" option, pre-selected."""
+        schema = _create_merge_schema(
+            "contract-notice",
+            [
+                {"field_name": "title", "label": "Title"},
+                {"field_name": "name", "label": "URL"},
+                {"field_name": "tag_string", "label": "Tags", "preset": "tag_string_autocomplete"},
+            ],
+        )
+        user = sysadmin_factory()
+        context = {"user": user["name"]}
+        base = call_action(
+            "package_create",
+            context=context,
+            type=schema.schema_type,
+            name="base-dataset",
+            title="Base title",
+            tag_string="alpha,shared",
+        )
+        source = call_action(
+            "package_create",
+            context=context,
+            type=schema.schema_type,
+            name="source-dataset",
+            title="Source title",
+            tag_string="beta,shared",
+        )
+        app.set_session_user(user["id"])
+
+        response = app.get(_merge_review_url(base, source), base_url=TEST_BASE_URL)
+        page = bs4.BeautifulSoup(response.body)
+
+        tags = page.select_one('[data-field-name="tags"]')
+        assert tags["data-value-state"] == "conflict"
+        choices = tags.select('input[type="radio"][name="metadata_tags"]')
+        assert {choice["value"] for choice in choices} == {"base", "source", "both"}
+        assert tags.select_one('input[value="both"]').has_attr("checked")
+        assert not tags.select_one('input[value="base"]').has_attr("checked")
+        both_value = tags.select_one('[data-source="both"] [data-merge-value]').text.split()
+        assert both_value == ["alpha", "beta", "shared"]
+
+    def test_tag_conflict_can_be_merged_by_confirming_the_default(
+        self,
+        app: CKANTestApp,
+        sysadmin_factory: Any,
+    ):
+        """Submitting a tag conflict without an explicit choice unions the tags."""
+        schema = _create_merge_schema(
+            "contract-notice",
+            [
+                {"field_name": "title", "label": "Title"},
+                {"field_name": "name", "label": "URL"},
+                {"field_name": "tag_string", "label": "Tags", "preset": "tag_string_autocomplete"},
+            ],
+        )
+        user = sysadmin_factory()
+        context = {"user": user["name"]}
+        base = call_action(
+            "package_create",
+            context=context,
+            type=schema.schema_type,
+            name="base-dataset",
+            title="Base title",
+            tag_string="alpha,shared",
+        )
+        source = call_action(
+            "package_create",
+            context=context,
+            type=schema.schema_type,
+            name="source-dataset",
+            title="Source title",
+            tag_string="beta,shared",
+        )
+        app.set_session_user(user["id"])
+
+        response = app.post(
+            _merge_review_url(base, source),
+            data={"confirm_merge": "1", "metadata_tags": "both"},
+            base_url=TEST_BASE_URL,
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 302
+        updated = call_action("package_show", id=base["id"])
+        assert sorted(tag["name"] for tag in updated["tags"]) == ["alpha", "beta", "shared"]

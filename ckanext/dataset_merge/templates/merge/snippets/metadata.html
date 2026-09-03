@@ -18,7 +18,9 @@
     {% for field in comparison.metadata_fields %}
       {% set field_id = "merge-field-" ~ loop.index %}
       {% if field.state == "conflict" %}
-        <fieldset class="merge-review__field merge-review__field--conflict" data-merge-field
+        {% set default_choice = "both" if field.combinable else "base" %}
+        <fieldset class="merge-review__field merge-review__field--conflict
+          {{- ' merge-review__field--combinable' if field.combinable }}" data-merge-field
           data-field-name="{{ field.field_name }}" data-field-label="{{ field.label }}"
           data-value-state="{{ field.state }}">
           <legend class="visually-hidden">
@@ -31,27 +33,32 @@
               <small>{{ _("The selected organization determines who manages the surviving dataset.") }}</small>
             {% elif field.field_name == "name" %}
               <small>{{ _("The surviving dataset will use the selected URL after the merge.") }}</small>
+            {% elif field.combinable %}
+              <small>{{ _("Both datasets' values are combined by default. Pick a single dataset to drop the rest.") }}</small>
             {% endif %}
           </div>
           <div class="merge-review__value-options">
-            {% for source_name, dataset, value, letter in [
-              ("base", base, field.base_value, "A"),
-              ("source", source, field.source_value, "B")
+            {% set options = [
+              ("base", base, field.base_value, _("Dataset A")),
+              ("source", source, field.source_value, _("Dataset B")),
             ] %}
-              {% set input_id = field_id ~ "-" ~ source_name %}
+            {% if field.combinable %}
+              {% set options = options + [("both", none, field.combined_value, _("Both datasets"))] %}
+            {% endif %}
+            {% for choice, dataset, value, choice_label in options %}
+              {% set input_id = field_id ~ "-" ~ choice %}
               {% set value_id = input_id ~ "-value" %}
-              <div class="merge-review__value-option" data-source="{{ source_name }}">
-                <div class="merge-review__value-card {{ 'is-selected' if source_name == 'base' }}">
+              {% set is_default = choice == default_choice %}
+              <div class="merge-review__value-option" data-source="{{ choice }}">
+                <div class="merge-review__value-card {{ 'is-selected' if is_default }}">
                   <label class="merge-review__value-choice" for="{{ input_id }}">
                     <input id="{{ input_id }}" class="merge-review__choice" type="radio"
-                      name="metadata_{{ field.field_name }}" value="{{ source_name }}"
-                      {% if source_name == "base" %}checked{% endif %}>
+                      name="metadata_{{ field.field_name }}" value="{{ choice }}"
+                      {% if is_default %}checked{% endif %}>
                     <span class="merge-review__radio-dot" aria-hidden="true"></span>
-                    <span class="merge-review__value-source">
-                      {{ _("Dataset {letter}").format(letter=letter) }}
-                    </span>
+                    <span class="merge-review__value-source">{{ choice_label }}</span>
                     <span class="merge-review__value-status" data-value-status>
-                      {{ _("Kept — default") if source_name == "base" else _("Not kept") }}
+                      {{ _("Kept — default") if is_default else _("Not kept") }}
                     </span>
                     {{ merge.expandable_value(value, dataset, field.field_name, value_id) }}
                   </label>

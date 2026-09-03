@@ -423,6 +423,10 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+.merge-review__field--combinable .merge-review__value-options {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .merge-review__value-option {
   min-width: 0;
 }
@@ -723,6 +727,10 @@
     height: 16px;
     margin: 0;
     accent-color: var(--merge-accent);
+  }
+
+  &:after {
+    display: none;
   }
 }
 
@@ -1193,6 +1201,7 @@
   .merge-review__field--conflict,
   .merge-review__field--automatic,
   .merge-review__value-options,
+  .merge-review__field--combinable .merge-review__value-options,
   .merge-select__cards {
     grid-template-columns: minmax(0, 1fr);
   }

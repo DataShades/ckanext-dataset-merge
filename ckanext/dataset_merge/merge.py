@@ -333,6 +333,8 @@ def _compare_metadata_field(
         "base_value": base_value,
         "source_value": source_value,
         "state": _metadata_value_state(base_value, source_value),
+        "combinable": False,
+        "combined_value": None,
     }
 
 
@@ -347,6 +349,9 @@ def _compare_tag_field(
     of dicts (each carrying a dataset-specific ``id``). Read the names from
     there, compare on the name sets, and hand ``package_update`` a clean
     ``{"name": ...}`` list under the ``tags`` key.
+
+    Tags are a set, so a conflict also offers a "both" choice that keeps the
+    union of the two tag sets (and that union is the default).
     """
     base_value = _tag_list(base)
     source_value = _tag_list(source)
@@ -359,6 +364,8 @@ def _compare_tag_field(
             [tag["name"] for tag in base_value],
             [tag["name"] for tag in source_value],
         ),
+        "combinable": True,
+        "combined_value": _combine_tag_lists(base_value, source_value),
     }
 
 
@@ -368,27 +375,42 @@ def _tag_list(dataset: dict[str, Any]) -> list[dict[str, str]]:
     return [{"name": tag["name"]} for tag in sorted(tags, key=lambda tag: tag["name"])]
 
 
+def _combine_tag_lists(*tag_lists: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Union of several tag lists, de-duplicated by name and ordered by name."""
+    names = {tag["name"] for tags in tag_lists for tag in tags}
+    return [{"name": name} for name in sorted(names)]
+
+
+def _default_choice(field: MetadataComparisonField) -> str:
+    """The pre-selected side for a conflict: ``both`` for combinable fields."""
+    return "both" if field["combinable"] else "base"
+
+
 def _validate_metadata_choices(
     fields: list[MetadataComparisonField],
     choices: dict[str, str],
 ) -> None:
-    conflicts = {field["field_name"] for field in fields if field["state"] == "conflict"}
-    invalid_fields = set(choices) - conflicts
-    invalid_values = set(choices.values()) - {"base", "source"}
-    if invalid_fields or invalid_values:
-        raise tk.ValidationError(
-            {"metadata_choices": [tk._("Metadata choices must identify a conflicting field and dataset side.")]}
-        )
+    conflicts = {field["field_name"]: field for field in fields if field["state"] == "conflict"}
+    for field_name, choice in choices.items():
+        field = conflicts.get(field_name)
+        allowed = {"base", "source", "both"} if field and field["combinable"] else {"base", "source"}
+        if field is None or choice not in allowed:
+            raise tk.ValidationError(
+                {"metadata_choices": [tk._("Metadata choices must identify a conflicting field and dataset side.")]}
+            )
 
 
 def _selected_metadata_value(
     field: MetadataComparisonField,
     choices: dict[str, str],
 ) -> Any:
-    source_name = "source" if field["state"] == "source_only" else "base"
-    if field["state"] == "conflict":
-        source_name = choices.get(field["field_name"], "base")
-    return field["source_value"] if source_name == "source" else field["base_value"]
+    if field["state"] != "conflict":
+        return field["source_value"] if field["state"] == "source_only" else field["base_value"]
+
+    choice = choices.get(field["field_name"], _default_choice(field))
+    if choice == "both":
+        return field["combined_value"]
+    return field["source_value"] if choice == "source" else field["base_value"]
 
 
 def _clone_source_resource(resource: dict[str, Any]) -> dict[str, Any]:
