@@ -10,6 +10,9 @@ from ckanext.scheming_dynamic.model import SchemingSchemaVersion
 
 from ckanext.dataset_merge import merge
 
+# This module exercises the merge's XLoader-specific update path.
+pytest.importorskip("ckanext.xloader")
+
 
 @pytest.mark.ckan_config(
     "ckan.plugins",

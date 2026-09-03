@@ -16,7 +16,14 @@ classifiers = [
 ]
 
 keywords = [ "CKAN", ]
-dependencies = []
+
+# Only plain ckanext-scheming is required. `scheming_dynamic` (DataShades fork)
+# is optional and detected at runtime — see the README. The test suite does
+# need the fork; it is installed from git in CI / dev setups.
+dependencies = ["ckanext-scheming"]
+
+[project.optional-dependencies]
+dev = ["pytest-ckan", "pytest-cov"]
 
 [project.urls]
 Homepage = "https://github.com/DataShades/ckanext-dataset-merge"

@@ -93,15 +93,13 @@ def merge_review_datasets(
 
 # blueprints are registered when the plugin is enabled, so `with_plugins` is a
 # mandatory fixture for any view test.
-@pytest.mark.ckan_config("ckan.plugins", "harvest dataset_merge")
+@pytest.mark.ckan_config("ckan.plugins", "dataset_merge")
 @pytest.mark.usefixtures("with_plugins", "clean_db", "clean_index")
 def test_merge_selector_finds_partial_multiword_title(
     app: CKANTestApp,
-    migrate_db_for: Any,
     sysadmin_factory: Any,
 ):
     """Find an editable dataset when its title query ends mid-word."""
-    migrate_db_for("harvest")
     user = sysadmin_factory()
     dataset = call_action(
         "package_create",

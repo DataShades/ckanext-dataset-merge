@@ -1,120 +1,131 @@
-[![Tests](https://github.com/DataShades/ckanext-dataset-merge/workflows/Tests/badge.svg?branch=main)](https://github.com/DataShades/ckanext-dataset-merge/actions)
+[![Tests](https://github.com/DataShades/ckanext-dataset-merge/actions/workflows/test.yml/badge.svg)](https://github.com/DataShades/ckanext-dataset-merge/actions/workflows/test.yml)
 
 # ckanext-dataset-merge
 
-**TODO:** Put a description of your extension here:  What does it do? What features does it have? Consider including some screenshots or embedding a video!
+A guided workflow for merging two datasets of the same type into one.
 
+One dataset (**A**, the *base*) survives the merge — it keeps its identity (ID),
+URL, revision history and, when `scheming_dynamic` is active, its schema-version
+pin. Selected metadata fields and resources from a second dataset (**B**, the
+*source*) are folded into A, and B is then soft-deleted.
+
+## Features
+
+- **Start-merge picker** – an "Merge datasets" action on the dataset page and the
+  dataset search page opens a modal that searches the datasets you are allowed to
+  edit and checks whether the pair can be merged.
+- **Compatibility checks** – both datasets must be the same type. With
+  `scheming_dynamic` enabled and either dataset pinned to a schema version, they
+  must share the *exact* pinned schema type and version; otherwise the user is
+  told to migrate first.
+- **Side-by-side review page** – every schema field is shown for both datasets
+  and classified as *same*, *only on A*, *only on B*, *empty* or *conflict*.
+  Non-conflicting values are carried over automatically; conflicts get a
+  radio choice (Dataset A is the default).
+- **Combine multi-value fields** – for set-valued fields such as **tags** a
+  conflict also offers a *Both datasets* option that keeps the union of the two
+  values, and that union is pre-selected.
+- **Preview + confirm** – a modal shows the final metadata and the resource list
+  before anything is written.
+- **Safe apply** – A is updated first and B is only soft-deleted afterwards. If
+  the cleanup step fails, A stays merged and a retry page lets you finish
+  deleting B without re-running the merge.
+
+### Actions
+
+| Action | Description |
+| --- | --- |
+| `merge_compatibility` | Report whether two datasets are eligible to be merged. |
+| `merge_metadata_comparison` | Field-by-field comparison for the review form. |
+| `merge_resolve_decisions` | Resolve submitted choices without changing anything. |
+| `merge_apply_to_base` | Apply the chosen content to A (leaves B untouched). |
+| `merge_cleanup_source` | Soft-delete B after A has been updated. |
 
 ## Requirements
 
-**TODO:** For example, you might want to mention here which versions of CKAN this
-extension works with.
+**[ckanext-scheming](https://github.com/ckan/ckanext-scheming)** is required — the
+field list for the review page comes from the dataset's scheming schema, so the
+`scheming_datasets` plugin must be enabled.
 
-If your extension works across different versions you can add the following table:
+**`scheming_dynamic` is optional.** It is not part of upstream ckanext-scheming;
+it ships in the [DataShades
+fork](https://github.com/DataShades/ckanext-scheming/tree/dynamic-schemas). When
+its plugin is loaded the merge additionally requires the two datasets to share an
+*exact* pinned schema type **and** version; without it, eligibility is just a
+dataset-type match. The plugin detects this at runtime
+(`p.plugin_loaded("scheming_dynamic")`) — nothing to configure.
 
 Compatibility with core CKAN versions:
 
-| CKAN version    | Compatible?   |
-| --------------- | ------------- |
-| 2.9 and earlier | not tested    |
-| 2.10            | not tested    |
-| 2.11            | not tested    |
-
-Suggested values:
-
-* "yes"
-* "not tested" - I can't think of a reason why it wouldn't work
-* "not yet" - there is an intention to get it working
-* "no"
-
+| CKAN version | Compatible? |
+| ------------ | ----------- |
+| 2.10 and earlier | no (needs `h.csrf_input`, CKAN 2.11+) |
+| 2.11         | yes |
+| 2.12         | yes |
 
 ## Installation
 
-**TODO:** Add any additional install steps to the list below.
-   For example installing any non-Python dependencies or adding any required
-   config settings.
-
-To install ckanext-dataset-merge:
-
 1. Activate your CKAN virtual environment, for example:
 
-     . /usr/lib/ckan/default/bin/activate
+       . /usr/lib/ckan/default/bin/activate
 
-2. Clone the source and install it on the virtualenv
+2. Install the extension (this pulls in `ckanext-scheming`):
 
-    git clone https://github.com/DataShades/ckanext-dataset-merge.git
-    cd ckanext-dataset-merge
-    pip install -e .
-	pip install -r requirements.txt
+       pip install ckanext-dataset-merge
 
-3. Add `dataset-merge` to the `ckan.plugins` setting in your CKAN
-   config file (by default the config file is located at
-   `/etc/ckan/default/ckan.ini`).
+   Only if you want the `scheming_dynamic` behaviour, install the DataShades
+   fork instead of upstream ckanext-scheming:
 
-4. Restart CKAN. For example if you've deployed CKAN with Apache on Ubuntu:
+       pip install "ckanext-scheming[dynamic] @ git+https://github.com/DataShades/ckanext-scheming.git@dynamic-schemas"
 
-     sudo service apache2 reload
+3. Add the plugins to the `ckan.plugins` setting in your CKAN config file, with
+   `dataset_merge` after `scheming_datasets`:
 
+       ckan.plugins = ... scheming_datasets dataset_merge
+       # or, with dynamic schemas:
+       ckan.plugins = ... scheming_datasets scheming_dynamic dataset_merge
+
+4. If you enabled `scheming_dynamic` for the first time, apply its migrations:
+
+       ckan db upgrade -p scheming_dynamic
+
+5. Restart CKAN.
 
 ## Config settings
 
-None at present
-
-**TODO:** Document any optional config settings here. For example:
-
-	# The minimum number of hours to wait before re-checking a resource
-	# (optional, default: 24).
-	ckanext.dataset_merge.some_setting = some_default_value
-
+None.
 
 ## Developer installation
 
-To install ckanext-dataset-merge for development, activate your CKAN virtualenv and
-do:
-
     git clone https://github.com/DataShades/ckanext-dataset-merge.git
     cd ckanext-dataset-merge
-    pip install -e .
-    pip install -r dev-requirements.txt
+    # the test suite exercises the dynamic-schema path, so use the fork here
+    pip install "ckanext-scheming[dynamic] @ git+https://github.com/DataShades/ckanext-scheming.git@dynamic-schemas"
+    pip install ckanext-xloader
+    pip install -e '.[dev]'
 
+The front-end assets (`ckanext/dataset_merge/assets/`) are built from SCSS with
+gulp — run `npm install && npm run build` (or `npx gulp watch` while working)
+after changing anything under `assets/scss/`.
 
 ## Tests
 
-To run the tests, do:
-
     pytest --ckan-ini=test.ini
 
+The suite needs Postgres, Solr and Redis (as configured in `test.ini`). Most
+tests cover the `scheming_dynamic` behaviour, so they need the DataShades
+ckanext-scheming fork and `ckanext-xloader` on the path — see the developer
+installation above and `.github/workflows/test.yml`.
 
-## Releasing a new version of ckanext-dataset-merge
+## Releasing a new version
 
-If ckanext-dataset-merge should be available on PyPI you can follow these steps to publish a new version:
+1. Bump `version` in `pyproject.toml` (see [PEP 440](https://peps.python.org/pep-0440/#public-version-identifiers)).
+2. `pip install --upgrade build twine`
+3. `python -m build && twine check dist/*`
+4. `twine upload dist/*`
+5. Commit, push, then tag the release:
 
-1. Update the version number in the `pyproject.toml` file. See [PEP 440](http://legacy.python.org/dev/peps/pep-0440/#public-version-identifiers) for how to choose version numbers.
-
-2. Make sure you have the latest version of necessary packages:
-
-    pip install --upgrade setuptools wheel twine
-
-3. Create a source and binary distributions of the new version:
-
-       python -m build && twine check dist/*
-
-   Fix any errors you get.
-
-4. Upload the source distribution to PyPI:
-
-       twine upload dist/*
-
-5. Commit any outstanding changes:
-
-       git commit -a
-       git push
-
-6. Tag the new release of the project on GitHub with the version number from
-   the `setup.py` file. For example if the version number in `setup.py` is
-   0.0.1 then do:
-
-       git tag 0.0.1
+       git tag v$(python -c "import tomllib,pathlib;print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
        git push --tags
 
 ## License
